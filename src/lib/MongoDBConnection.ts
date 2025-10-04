@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb'
+import { MongoClient, Db, Collection } from 'mongodb'
 
 export interface DatabaseConnection {
   client: MongoClient
@@ -10,8 +10,13 @@ export default class MongoDBConnection {
   private client: MongoClient | null = null
   private db: Db | null = null
   private isConnected: boolean = false
+  private collections: {
+    menus?: Collection
+  } = {}
 
-  private constructor() {}
+  private constructor() {
+    this.collections = {}
+  }
 
   public static getInstance(): MongoDBConnection {
     if (!MongoDBConnection.instance) {
@@ -38,17 +43,27 @@ export default class MongoDBConnection {
 
     try {
       this.client = new MongoClient(uri)
+
       await this.client.connect()
+
       this.db = this.client.db(dbName)
+
+      this.collections.menus = this.db.collection("Menus");
+
       this.isConnected = true
-      
+
       console.log('Successfully connected to MongoDB')
+      
       return { client: this.client, db: this.db }
     } catch (error) {
       console.error('Failed to connect to MongoDB:', error)
-      this.isConnected = false
+      this.isConnected = false      
       throw error
     }
+  }
+
+  public getCollections() {
+    return this.collections
   }
 
   public async disconnect(): Promise<void> {
@@ -57,7 +72,7 @@ export default class MongoDBConnection {
     this.client = null
     this.db = null
     this.isConnected = false
-    console.log('Disconnected from MongoDB')
+    console.log('Successfully disconnected from MongoDB')
   }
 
   public isConnectionActive(): boolean {
